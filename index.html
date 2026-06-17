@@ -1,0 +1,111 @@
+react
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Dumbbell, 
+  Clock, 
+  Calendar as CalendarIcon, 
+  CheckCircle2, 
+  Award, 
+  BookOpen, 
+  History, 
+  TrendingUp, 
+  Plus, 
+  Trash2, 
+  Smile, 
+  Check, 
+  Flame, 
+  RotateCcw,
+  Sparkles,
+  ArrowRightLeft,
+  Info,
+  Minus,
+  Play,
+  Square,
+  Volume2,
+  VolumeX,
+  Timer,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'; 
+
+// 글로벌 오디오 컨텍스트 관리 객체
+let globalAudioCtx = null; 
+
+const initAudioContext = () => {
+  if (!globalAudioCtx) {
+    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (globalAudioCtx.state === 'suspended') {
+    globalAudioCtx.resume();
+  }
+}; 
+
+// 메트로놈 우드블록 타격음 물리 합성
+const playWoodblockSound = (isHigh = false) => {
+  try {
+    initAudioContext();
+    if (!globalAudioCtx || globalAudioCtx.state === 'suspended') return; 
+
+    const osc = globalAudioCtx.createOscillator();
+    const gain = globalAudioCtx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(globalAudioCtx.destination);
+    
+    const baseFreq = isHigh ? 1200 : 800;
+    osc.frequency.setValueAtTime(baseFreq, globalAudioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, globalAudioCtx.currentTime + 0.05);
+    
+    osc.type = 'sine';
+    
+    gain.gain.setValueAtTime(0.6, globalAudioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, globalAudioCtx.currentTime + 0.08);
+    
+    osc.start(globalAudioCtx.currentTime);
+    osc.stop(globalAudioCtx.currentTime + 0.1);
+  } catch (e) {
+    console.warn("오디오 재생 실패:", e);
+  }
+}; 
+
+const createInitialSets = (count) => {
+  return Array.from({ length: count }, (_, i) => ({
+    setNumber: i + 1,
+    weight: '',
+    reps: '',
+    completed: false
+  }));
+}; 
+
+// Routine A: 가슴, 등 (순서 교체 반영: 펙 덱 플라이 3번 -> 푸쉬업 4번)
+const ROUTINE_A = [
+  { id: 'a1', name: '플랫 벤치프레스 / 또는 해머벤치프레스', targetReps: '8 - 20회', targetSets: '5 - 7세트', notes: '', completed: false, sets: createInitialSets(5) },
+  { id: 'a2', name: '체스트 프레스', targetReps: '8 - 20회', targetSets: '3세트', notes: '', completed: false, sets: createInitialSets(3) },
+  { id: 'a4', name: '펙 덱 플라이', targetReps: '측정식', targetSets: '2세트', notes: '자극 위주', completed: false, sets: createInitialSets(2) }, 
+  { id: 'a3', name: '푸쉬업', targetReps: '측정식', targetSets: '1세트', notes: '', completed: false, sets: createInitialSets(1) }, 
+  { id: 'a5', name: '턱걸이', targetReps: '자율', targetSets: '5 - 7세트', notes: '', completed: false, sets: createInitialSets(5) },
+  { id: 'a6', name: '렛풀다운(프론트)', targetReps: '12 - 15회', targetSets: '4세트', notes: '마지막세트는 20회 이상 가능한 중량으로 실시', completed: false, sets: createInitialSets(4) },
+  { id: 'a7', name: '렛풀다운(비하인드)', targetReps: '12 - 15회', targetSets: '4세트', notes: '', completed: false, sets: createInitialSets(4) },
+  { id: 'a8', name: '시티드 로우', targetReps: '12 - 15회', targetSets: '4세트', notes: '', completed: false, sets: createInitialSets(4) },
+  { id: 'a9', name: '셋업 또는 크런치', targetReps: '자율', targetSets: '5세트', notes: '', completed: false, sets: createInitialSets(5) },
+  { id: 'a10', name: '유산소 훈련', targetReps: '감도있게', targetSets: '15분 이내', notes: '상체운동일 감도있게 권장', completed: false, sets: createInitialSets(1) },
+]; 
+
+// Routine B: 하체, 팔, 어깨
+const ROUTINE_B = [
+  { id: 'b1', name: '레그익스텐션', targetReps: '15 - 20회', targetSets: '4세트', notes: '', completed: false, sets: createInitialSets(4) },
+  { id: 'b2', name: '레그프레스', targetReps: '10회 - 15회', targetSets: '4세트', notes: '', completed: false, sets: createInitialSets(4) },
+  { id: 'b3', name: 'BPM 스쿼트', targetReps: '30BPM 메트로놈 동기화', targetSets: '1세트', notes: '30박자에 맞춰 10분간 수행', completed: false, sets: [{ setNumber: 1, weight: '맨몸', reps: '0', completed: false }] },
+  { id: 'b4', name: '바벨 컬', targetReps: '12 - 15회', targetSets: '5세트', notes: '같은 무게로 15회 5세트 가능시 중량 UP', completed: false, sets: createInitialSets(5) },
+  { id: 'b5', name: '덤벨 컬', targetReps: '자율', targetSets: '3세트', notes: '', completed: false, sets: createInitialSets(3) },
+  { id: 'b6', name: '트라이셉스 익스텐션', targetReps: '자율', targetSets: '5세트', notes: '같은 무게로 15회 5세트 가능시 중량 UP', completed: false, sets: createInitialSets(5) },
+  { id: 'b7', name: '프레스다운', targetReps: '20회 이상', targetSets: '3세트', notes: '', completed: false, sets: createInitialSets(3) },
+  { id: 'b8', name: '비하인드 넥프레스 (스미스 머신)', targetReps: '20회 - 30회', targetSets: '4세트', notes: '휴식시간 1분 이내', completed: false, sets: createInitialSets(4) },
+  { id: 'b9', name: '머신 숄더프레스', targetReps: '15회 - 20회', text: '3세트', notes: '휴식시간 1분 이내', completed: false, sets: createInitialSets(3) },
+  { id: 'b10', name: '사이드레터럴 레이즈', targetReps: '40회 이상', targetSets: '3세트', notes: '40회 이상 가능한 무게 / 60회 달성 시 무게 UP', completed: false, sets: createInitialSets(3) },
+  { id: 'b11', name: '유산소 훈련', targetReps: '자율', targetSets: '권장 시간', notes: '피로도에 따라 미실시 가능', completed: false, sets: createInitialSets(1) },
+]; 
+
+const GUIDELINES = [
+  "2주간 A, B 번갈아가며 2분할 훈련 실시 (주 3회 빈도로 각 부위 타겟팅)",
+  "BPM 스쿼트는 30 BPM 메트로놈 장치(2초에 1회 비프음)에 정확히 싱크하여 10분간 불굴의 기상으로 완수합니
